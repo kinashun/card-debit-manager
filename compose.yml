@@ -1,0 +1,25 @@
+services:
+  app:
+    build: .
+    tty: true
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      - db
+  db:
+    build:
+      context: "."
+      dockerfile: "db.Dockerfile"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: card_debit_manager
+    volumes:
+      - card-debit-manager-data:/var/lib/postgresql/data
+
+volumes:
+  node_modules:
+  card-debit-manager-data:

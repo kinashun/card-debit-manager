@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId   Int    @id
+  username String @unique @db.VarChar(255)
+  banks    Bank[]
+  cards    Card[]
+
+  @@map(name: "users")
+}
+
+// 引き落とし口座 (金融機関)
+// 口座番号などの機密情報は保存しない設計
+model Bank {
+  bankId    String @id @db.Uuid
+  bankName  String @db.VarChar(255)
+  memo      String @db.Text
+  createdBy Int
+  user      User   @relation(fields: [createdBy], references: [userId])
+  cards     Card[]
+
+  @@index(fields: [createdBy])
+  @@map(name: "banks")
+}
+
+// クレジットカード
+// カード番号・セキュリティコードは保存しない設計
+model Card {
+  cardId     String    @id @db.Uuid
+  cardName   String    @db.VarChar(255)
+  closingDay Int // 締め日 (毎月◯日)
+  debitDay   Int // 引き落とし日 (毎月◯日)
+  bankId     String    @db.Uuid
+  bank       Bank      @relation(fields: [bankId], references: [bankId])
+  createdBy  Int
+  user       User      @relation(fields: [createdBy], references: [userId])
+  payments   Payment[]
+
+  @@index(fields: [createdBy])
+  @@map(name: "cards")
+}
+
+// 月ごとの支払 (カード × 年月 で一意)
+model Payment {
+  paymentId String @id @db.Uuid
+  cardId    String @db.Uuid
+  card      Card   @relation(fields: [cardId], references: [cardId])
+  yearMonth String @db.VarChar(7) // 例: "2026-09"
+  amount    Int // 支払金額 (円)
+  isPaid    Int    @default(0) // 0: 未払い, 1: 支払済
+
+  @@unique(fields: [cardId, yearMonth], name: "paymentCompositeId")
+  @@index(fields: [cardId, yearMonth])
+  @@map(name: "payments")
+}
