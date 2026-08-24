@@ -43,10 +43,13 @@ app.use('/auth/github', async (c, next) => {
   const authHandler = githubAuth({
     client_id: GITHUB_CLIENT_ID,
     client_secret: GITHUB_CLIENT_SECRET,
-    scope: ['read:user'],
+    scope: ['read:user', 'user:email'],
     oauthApp: true,
   });
-  return await authHandler(c, next).catch(() => c.redirect('/login'));
+  return await authHandler(c, next).catch((error) => {
+    console.error(error);
+    return c.redirect('/login');
+  });
 });
 
 // GitHub 認証の後の処理
